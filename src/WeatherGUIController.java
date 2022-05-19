@@ -1,26 +1,33 @@
+import javax.imageio.ImageIO;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.image.BufferedImage;
+import java.io.IOException;
+import java.net.URL;
 
 public class WeatherGUIController implements ActionListener
 {
-    private JTextArea weatherInfo;
+    private JFrame frame;
+    private JLabel currentInfo;
     private JTextField weatherEntryField;
     private WeatherAPI client;
+    private JPanel weatherPanel;
 
     public WeatherGUIController()
     {
-        weatherInfo = new JTextArea(10, 20);
+        frame = new JFrame("Weather App");
+        currentInfo = new JLabel();
         weatherEntryField = new JTextField();
         client = new WeatherAPI();
+        weatherPanel = new JPanel();
 
         setupGui();
     }
 
     private void setupGui()
     {
-        JFrame frame = new JFrame("Weather App");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
         JLabel welcomeLabel = new JLabel("Current Weather");
@@ -32,12 +39,13 @@ public class WeatherGUIController implements ActionListener
 
         //------------------------------------------
 
-        JPanel entryPanel = new JPanel();
         JLabel weatherLabel = new JLabel("Enter Zip Code: ");
         weatherEntryField = new JTextField(5);
         JButton submitButton = new JButton("Submit");
         JButton clearButton = new JButton("Clear");
         JCheckBox celsiusCheck = new JCheckBox("Show Celsius");
+
+        JPanel entryPanel = new JPanel();
         entryPanel.add(weatherLabel);
         entryPanel.add(weatherEntryField);
         entryPanel.add(submitButton);
@@ -46,7 +54,12 @@ public class WeatherGUIController implements ActionListener
 
         //------------------------------------------
 
-        JPanel weatherPanel = new JPanel();
+        currentInfo.setText("\nWaiting for an input...\n");
+        currentInfo.setFont(new Font("Arial", Font.BOLD, 10));
+        currentInfo.setOpaque(false);
+
+        weatherPanel = new JPanel();
+        weatherPanel.add(currentInfo);
 
         //------------------------------------------
 
@@ -58,6 +71,8 @@ public class WeatherGUIController implements ActionListener
         clearButton.addActionListener(this);
         celsiusCheck.addActionListener(this);
 
+        //------------------------------------------
+
         frame.pack();
         frame.setVisible(true);
     }
@@ -68,6 +83,7 @@ public class WeatherGUIController implements ActionListener
         JCheckBox checkBox = new JCheckBox();
         String text = "";
         boolean selected = false;
+
         try
         {
             button = (JButton) (e.getSource());
@@ -78,16 +94,50 @@ public class WeatherGUIController implements ActionListener
             checkBox = (JCheckBox) (e.getSource());
             selected = checkBox.isSelected();
         }
-        if (text.equals("Submit")) {
-            String zip = weatherEntryField.getText();
-            CurrentForecast forecast = client.getCurrentForecast(zip);
-            String info = "Temperature: " + forecast.getTempF() + "Condition: " + forecast.getCurrentCondition();
-            
-        }
-        else if (text.equals("Clear"))
+
+        String zipcode = weatherEntryField.getText();
+        CurrentForecast forecast = client.getCurrentForecast(zipcode);
+
+        ImageIcon weatherIcon = new ImageIcon();
+
+        try
         {
-            weatherEntryField.setText("");
+            BufferedImage image = ImageIO.read(new URL("https:" + forecast.getConditionIcon()));
+            weatherIcon = new ImageIcon(image);
+        }
+        catch (IOException ex) {
+            System.out.println(ex.getMessage());
         }
 
+        Image imageData = weatherIcon.getImage();
+        Image scaledImage = imageData.getScaledInstance(50, 50, java.awt.Image.SCALE_SMOOTH); // scale it the smooth way
+        weatherIcon = new ImageIcon(scaledImage);
+        JLabel pictureLabel = new JLabel(weatherIcon);
+
+        if (selected)
+        {
+            weatherPanel.removeAll();
+            weatherPanel.add(currentInfo);
+            String currentText = ("Temperature: " + forecast.getTempC() + "   Condition: " + forecast.getCurrentCondition());
+            currentInfo.setText(currentText);
+            weatherPanel.add(pictureLabel);
+        }
+        else
+        {
+            weatherPanel.removeAll();
+            weatherPanel.add(currentInfo);
+            String currentText = ("Temperature: " + forecast.getTempF() + "   Condition: " + forecast.getCurrentCondition());
+            currentInfo.setText(currentText);
+            weatherPanel.add(pictureLabel);
+        }
+
+        if (text.equals("Clear"))
+        {
+            weatherEntryField.setText("");
+            weatherPanel.removeAll();
+            weatherPanel.add(currentInfo);
+            currentInfo.setText("\nWaiting for an input...\n");
+        }
     }
 }
+

@@ -12,10 +12,7 @@ public class CurrentForecast {
         this.conditionIcon = conditionIcon;
     }
 
-    public double getTempF()
-    {
-        return tempF;
-    }
+    public double getTempF() { return tempF; }
 
     public double getTempC()
     {
